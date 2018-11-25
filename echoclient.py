@@ -33,7 +33,8 @@ try:
 				if(message=="exit"):
 					clientSocket.close()
 					print("------------------------------------------------\n")
-					sys.exit(1)
+					os.kill(pid, signal.SIGKILL)
+					os.kill(os.getpid(),signal.SIGKILL)
 
 			else:
 				data=clientSocket.recv(1024)
@@ -58,5 +59,4 @@ try:
 except:
 	clientSocket.close()
 	print("error")
-	sys.exit(1)
-
+sys.exit(1)
