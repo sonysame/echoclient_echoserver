@@ -29,13 +29,16 @@ def connection(conn, addr, port, option, user):
    print("\n\nprocess id is %d"%pid)
    
    try:
-      if(option!=0):
-         user[pid]=conn
-
+      if(option==1):
+         user.append(conn)
+         length=len(user)
          while True:
             message=client_connection.recv(1024)
             print(message)
-            for conn in user.values():
+            if(message=="exit"):
+               del user[length-1]
+               break
+            for conn in user:
                conn.send(message)
            
       else:
@@ -44,10 +47,12 @@ def connection(conn, addr, port, option, user):
             print(message)
             client_connection.send(message)
             if(message=="exit"):
-               client_connection.close()
+               break
+
    
    except socket.error:
       print("----------------------------------\n")
+      sys.exit(1)
       
    finally:
       print("--------------Bye bye!------------\n")
@@ -59,50 +64,36 @@ if __name__=='__main__':
    
    
    PORT=int(sys.argv[1])
-   try:
-      if(sys.argv[2]=='-b'):
-         listen_socket=open_server(PORT)
-         manager=multiprocessing.Manager()
-         user=manager.dict()
+  
+   listen_socket=open_server(PORT)
+   manager=multiprocessing.Manager()
+   user=manager.list()
          
-         while True:
+   while True:
+        
+         client_connection, client_address=listen_socket.accept()
+         
+         if(len(sys.argv)==3 and sys.argv[2]=='-b'):
             print("-b option is on")
-            client_connection, client_address=listen_socket.accept()
             client_connection.send("on")
             process=multiprocessing.Process(target=connection, args=(client_connection,client_address,PORT,1,user))
             process.daemon=True
             process.start()
-
-
-           
-         for process in multiprocessing.active_children():
-            process.terminate()
-            process.join()
-            print("-----------DONE------------") 
          
-      else:
-         print("sample : python echoserver 1234 -b")
-   
-   except:
-
-      listen_socket=open_server(PORT)
+         elif(len(sys.argv)==2):
+            client_connection.send("off")
+            process=multiprocessing.Process(target=connection, args=(client_connection,client_address,PORT,0,0))
+            process.daemon=True
+            process.start()
       
-      
-      while True:
-         
-         client_connection, client_address=listen_socket.accept()
-         client_connection.send("off")
-         process=multiprocessing.Process(target=connection, args=(client_connection,client_address,PORT,0,0))
-         process.daemon=True
-         process.start()
+         else:
+            print("syntax : echoserver <port> [-b]")
+            print("sample : echoserver 1234 -b")
+            sys.exit(1)
 
+   for process in multiprocessing.active_children():
+      process.terminate()
+      process.join()
+      print("-----------DONE------------")
 
-        
-      for process in multiprocessing.active_children():
-         process.terminate()
-         process.join()
-         print("-----------DONE------------")   
-
-   finally:
-      listen_socket.close()
-      
+   listen_socket.close()

@@ -1,4 +1,5 @@
 from socket import *
+import os
 import sys
 
 host=""
@@ -25,9 +26,16 @@ try:
 	option=clientSocket.recv(1024)
 	if(option=="on"):
 		while True:
-			message=raw_input("Input: ")
-			clientSocket.send(message)
-			while True:
+			pid=os.fork()
+			if pid :
+				message=raw_input()
+				clientSocket.send(message)
+				if(message=="exit"):
+					clientSocket.close()
+					print("------------------------------------------------\n")
+					sys.exit(1)
+
+			else:
 				data=clientSocket.recv(1024)
 				print(data)
 	
@@ -41,7 +49,7 @@ try:
 			if(data=="exit"):
 				clientSocket.close()
 				print("------------------------------------------------\n")
-				break
+				sys.exit(1)
 	
 
 	
@@ -50,4 +58,5 @@ try:
 except:
 	clientSocket.close()
 	print("error")
+	sys.exit(1)
 
